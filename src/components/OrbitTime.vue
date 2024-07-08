@@ -1,11 +1,12 @@
 <script setup >
-  import { ref, watch } from 'vue'
+  import { onMounted, onUnmounted, ref, watch } from 'vue'
 
   const date = new Date();
   const formatData = `${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
 
   const orbit = ref({data: formatData});
   const time = ref('Today');
+  const scrollDiv = ref(null);
   const firstOrbit = ref(0);
   const VISIBLEORBIT = 7;
   const getData = async () => {
@@ -14,52 +15,75 @@
         return response.json();
       })
       .then(data => orbit.value.orbit = data);
+      
   };
-  const scrollListener = () => {
-    // TODO add code to change firstOrbit and time
+  const handleScroll = () => {
+    console.log('scroll-q');
+  if (scrollDiv.value) {
+    const scrollTop = scrollDiv.value.scrollTop;
+    const scrollHeight = scrollDiv.value.scrollHeight;
+    const clientHeight = scrollDiv.value.clientHeight;
+
+    console.log(`Scroll Top: ${scrollTop}`);
+    console.log(`Scroll Height: ${scrollHeight}`);
+    console.log(`Client Height: ${clientHeight}`);
+
+    // Example condition: Check if scrolled to the bottom
+    if (scrollTop + clientHeight >= scrollHeight) {
+      console.log('Scrolled to the bottom');
+    }
   }
+};
 
   watch(
     [orbit.value.data],
     () => {
-      window.addEventListener('scroll', scrollListener)
       getData();
-      
     },
     { immediate: true },
   );
 
-  const transform = (orbitKey, numItems, item) => {
-    const deg = -180 / (numItems + 1);
-    const degRotate = item * deg;
-    if (orbitKey === firstOrbit.value && degRotate == -90) {
-      return `transform: rotate(${degRotate - 6}deg) translate(${50 - (orbitKey * 7.5)}vw) rotate(${-degRotate + 6}deg)`
-    };
-    return `transform: rotate(${degRotate}deg) translate(${50 - (orbitKey * 7.5)}vw) rotate(${-degRotate}deg)`
- }
+  onMounted(() => {
+    if (scrollDiv.value) {
+      console.log(scrollDiv.value);
+      scrollDiv.value.addEventListener('scroll', handleScroll);
+    }
+  });
+
+    onUnmounted(() => {
+      if (scrollDiv.value) {
+        scrollDiv.value.removeEventListener('scroll', handleScroll);
+
+      }
+    });
+
+//   const transform = (orbitKey, numItems, item) => {
+//     const deg = -180 / (numItems + 1);
+//     const degRotate = item * deg;
+//     if (orbitKey === firstOrbit.value && degRotate == -90) {
+//       return `transform: rotate(${degRotate - 8}deg) translate(${50 - (orbitKey * 7.5)}vw) rotate(${-degRotate + 6}deg)`
+//     }
+//     return `transform: rotate(${degRotate}deg) translate(${50 - (orbitKey * 7.5)}vw) rotate(${-degRotate}deg)`
+//  }
 
 </script>
 
 <template>
 
   <div class="orbit">
-  
-  <ul class="orbit-wrap" >
-
-    <li v-for="(orbit, Okey) in orbit.orbit">
-      <ul :class="['ring-' + (Okey-firstOrbit)]" v-if="Okey < VISIBLEORBIT || Okey >= firstOrbit">
-        <li v-if="Okey == firstOrbit" class="text"><span>{{ time }}</span></li>  
-        <li v-for="(item, key) in orbit.array">
-          <div :style="transform(Okey, orbit.array.length, key+1 )">
-            <img class="orbit-icon" :src="item.img" :alt="item.name" />
-          </div>
-        </li>
-      </ul>
-    </li>
-
-  </ul>
-  
-</div>
+    <ul class="orbit-wrap" ref="scrollDiv">
+      <!-- <li v-for="(orbit, Okey) in orbit.orbit" :key="Okey">
+        <ul :class="['ring-' + (Okey-firstOrbit), (Okey < VISIBLEORBIT && Okey >= firstOrbit) ? '' : 'disable' ]">
+          <li v-if="Okey == firstOrbit" class="text" ><span>{{ time }}</span></li>  
+          <li v-for="(item, key) in orbit.array" :key="key">
+            <div :style="transform(Okey, orbit.array.length, key+1 )">
+              <img class="orbit-icon" :src="item.img" :alt="item.name" />
+            </div>
+          </li>
+        </ul>
+      </li> -->
+    </ul>
+  </div>
 </template>
 
 
@@ -96,10 +120,12 @@ html {
 }
 
 .orbit-wrap {
-  height: 60%;
+  width: 100%;
+  height: 160vh;
+  min-height: 60%;
   list-style: none;
   font-size: 1.3em;
-  
+  overflow-y: scroll;
   > li {
     position: absolute;
     padding-top: 50%;
@@ -116,6 +142,9 @@ ul[class^=ring] {
     @extend %orbiting-object;
     transition: all 300ms ease-in-out;
   }
+}
+.disable {
+  display: none;
 }
 
 // Render rings
@@ -153,10 +182,11 @@ ul[class^=ring] {
     text-align: center;
     display: flex;
     justify-content: center;
-    margin-top: -12px;
+    margin-top: -10px;
     transform: rotate(-90deg) translate(50vw) rotate(90deg);
 
     span {
+      font-size: 14px;
       background-color: #0A0A0A;
       padding: 0 4px;
     }
